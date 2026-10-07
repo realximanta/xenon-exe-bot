@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>xenon-exe-bot — Telegram Broadcaster</title>
+  <meta name="description" content="A 24/7 Telegram automation bot that broadcasts your messages to contacts, non-contacts, and groups — deployed on Render, kept alive by UptimeRobot." />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+
+  <!-- Devicon (Telegram icon) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/devicon.min.css" />
+
+  <!-- AOS (Animate On Scroll) -->
+  <link rel="stylesheet" href="https://unpkg.com/aos@2.3.4/dist/aos.css" />
+
+  <!-- Particles.js (background) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/particlesjs/2.2.3/particles.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #0a0e17;
+      --surface: #111827;
+      --surface-2: #1a2235;
+      --border: #1f2a3d;
+      --text: #e2e8f0;
+      --text-muted: #8892a4;
+      --accent: #26A5E4;
+      --accent-glow: rgba(38, 165, 228, 0.3);
+      --green: #22c55e;
+      --yellow: #eab308;
+      --purple: #a855f7;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+
+    #particles-js {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .content { position: relative; z-index: 1; }
+
+    /* ---- Hero ---- */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2rem;
+      position: relative;
+    }
+
+    .hero-icon {
+      font-size: 5rem;
+      color: var(--accent);
+      margin-bottom: 1.5rem;
+      filter: drop-shadow(0 0 30px var(--accent-glow));
+      animation: pulse 3s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { filter: drop-shadow(0 0 30px var(--accent-glow)); }
+      50% { filter: drop-shadow(0 0 60px var(--accent-glow)); }
+    }
+
+    .hero h1 {
+      font-size: clamp(2rem, 6vw, 4rem);
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.75rem;
+      background: linear-gradient(135deg, #fff 0%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero p {
+      font-size: 1.15rem;
+      color: var(--text-muted);
+      max-width: 640px;
+      margin-bottom: 2rem;
+    }
+
+    .hero-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      justify-content: center;
+      margin-bottom: 2rem;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.85rem;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-muted);
+      transition: all 0.2s ease;
+    }
+
+    .badge:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      transform: translateY(-2px);
+    }
+
+    .badge i { font-size: 0.85rem; }
+
+    .cta-row {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.8rem 1.6rem;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      text-decoration: none;
+      transition: all 0.25s ease;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 4px 20px var(--accent-glow);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 30px var(--accent-glow);
+    }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-outline:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      transform: translateY(-3px);
+    }
+
+    /* ---- Stats Bar ---- */
+    .stats-bar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 2rem;
+      padding: 2rem 1.5rem;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .stat {
+      text-align: center;
+      min-width: 110px;
+    }
+
+    .stat-value {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--accent);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .stat-label {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-top: 0.15rem;
+    }
+
+    /* ---- Sections ---- */
+    section {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 5rem 1.5rem;
+    }
+
+    .section-title {
+      font-size: 1.8rem;
+      font-weight: 800;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .section-title i { color: var(--accent); }
+
+    .section-sub {
+      color: var(--text-muted);
+      margin-bottom: 2.5rem;
+      font-size: 1rem;
+    }
+
+    /* ---- Feature Grid ---- */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.6rem;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 3px;
+      background: linear-gradient(90deg, var(--accent), transparent);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .card:hover {
+      border-color: rgba(38, 165, 228, 0.4);
+      transform: translateY(-4px);
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    }
+
+    .card:hover::before { opacity: 1; }
+
+    .card-icon {
+      font-size: 1.6rem;
+      color: var(--accent);
+      margin-bottom: 1rem;
+      display: block;
+    }
+
+    .card h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .card p {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+
+    /* ---- Usage / Code ---- */
+    .code-block {
+      background: #0d1117;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.88rem;
+      line-height: 1.8;
+      overflow-x: auto;
+      position: relative;
+    }
+
+    .code-block .comment { color: #6b7a99; }
+    .code-block .cmd { color: var(--accent); font-weight: 700; }
+    .code-block .arg { color: #fbbf24; }
+    .code-block .str { color: var(--green); }
+
+    .copy-btn {
+      position: absolute;
+      top: 0.8rem; right: 0.8rem;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 0.3rem 0.7rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .copy-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+    /* ---- Tech Stack ---- */
+    .tech-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-top: 1.5rem;
+    }
+
+    .tech-pill {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .tech-pill:hover { border-color: var(--accent); }
+
+    .tech-pill i { font-size: 1.2rem; }
+
+    /* ---- Roadmap ---- */
+    .roadmap {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .roadmap li {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.8rem 1.1rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 0.92rem;
+      transition: all 0.2s;
+    }
+
+    .roadmap li:hover { border-color: var(--accent); }
+
+    .roadmap li i { width: 1.2rem; text-align: center; }
+
+    .roadmap li.done i { color: var(--green); }
+    .roadmap li.todo i { color: var(--text-muted); }
+
+    /* ---- Footer ---- */
+    footer {
+      text-align: center;
+      padding: 3rem 1.5rem;
+      border-top: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .footer-links a {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.9rem;
+    }
+
+    /* ---- Last Updated ---- */
+    .updated {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 0.4rem 0.9rem;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .updated i { color: var(--green); font-size: 0.6rem; }
+
+    /* ---- Responsive ---- */
+    @media (max-width: 600px) {
+      .hero h1 { font-size: 1.8rem; }
+      .hero p { font-size: 1rem; }
+      .stats-bar { gap: 1.2rem; }
+      .stat-value { font-size: 1.4rem; }
+      section { padding: 3rem 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Particle background -->
+  <canvas id="particles-js"></canvas>
+
+  <div class="content">
+
+    <!-- ============ HERO ============ -->
+    <header class="hero">
+      <div class="hero-icon" data-aos="zoom-in" data-aos-duration="800">
+        <i class="devicon-telegram-plain"></i>
+      </div>
+
+      <h1 data-aos="fade-up" data-aos-duration="800">xenon-exe-bot</h1>
+
+      <p data-aos="fade-up" data-aos-duration="800" data-aos-delay="150">
+        A 24/7 Telegram automation bot that broadcasts your messages to contacts,
+        non-contacts, and groups — deployed on Render, kept alive by UptimeRobot.
+      </p>
+
+      <div class="hero-badges" data-aos="fade-up" data-aos-duration="800" data-aos-delay="300">
+        <span class="badge"><i class="fab fa-python"></i> Python 3.11+</span>
+        <span class="badge"><i class="fas fa-bolt"></i> Telethon 1.36+</span>
+        <span class="badge"><i class="fas fa-flask"></i> Flask 3.0+</span>
+        <span class="badge"><i class="fas fa-shield-halved"></i> MIT License</span>
+        <span class="badge"><i class="fas fa-circle-check"></i> Active</span>
+      </div>
+
+      <div class="cta-row" data-aos="fade-up" data-aos-duration="800" data-aos-delay="450">
+        <a href="https://github.com/realximanta/xenon-exe-bot" class="btn btn-primary" target="_blank" rel="noopener">
+          <i class="fab fa-github"></i> View on GitHub
+        </a>
+        <a href="https://render.com" class="btn btn-outline" target="_blank" rel="noopener">
+          <i class="fas fa-rocket"></i> Deploy to Render
+        </a>
+      </div>
+    </header>
+
+    <!-- ============ LIVE STATS ============ -->
+    <div class="stats-bar" data-aos="fade-in" data-aos-duration="800">
+      <div class="stat">
+        <div class="stat-value" id="stat-stars">—</div>
+        <div class="stat-label"><i class="fas fa-star"></i> Stars</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" id="stat-forks">—</div>
+        <div class="stat-label"><i class="fas fa-code-fork"></i> Forks</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" id="stat-issues">—</div>
+        <div class="stat-label"><i class="fas fa-circle-exclamation"></i> Issues</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" id="stat-watchers">—</div>
+        <div class="stat-label"><i class="fas fa-eye"></i> Watchers</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" id="stat-commits">—</div>
+        <div class="stat-label"><i class="fas fa-code-commit"></i> Commits</div>
+      </div>
+    </div>
+
+    <!-- ============ FEATURES ============ -->
+    <section id="features">
+      <h2 class="section-title" data-aos="fade-right">
+        <i class="fas fa-wand-magic-sparkles"></i> Features
+      </h2>
+      <p class="section-sub" data-aos="fade-right" data-aos-delay="100">
+        Everything you need to broadcast at scale, with safety nets built in.
+      </p>
+
+      <div class="grid">
+        <div class="card" data-aos="fade-up" data-aos-delay="0">
+          <i class="fas fa-clock card-icon"></i>
+          <h3>24/7 Uptime</h3>
+          <p>Flask <code>/health</code> endpoint designed for UptimeRobot cron pings. Never sleeps.</p>
+        </div>
+        <div class="card" data-aos="fade-up" data-aos-delay="100">
+          <i class="fas fa-key card-icon"></i>
+          <h3>Session String Auth</h3>
+          <p>No interactive login — runs headless from an environment variable.</p>
+        </div>
+        <div class="card" data-aos="fade-up" data-aos-delay="200">
+          <i class="fas fa-paper-plane card-icon"></i>
+          <h3>Bulk Broadcasting</h3>
+          <p>Send one message to unlimited targets, sequentially, with built-in delays.</p>
+        </div>
+        <div class="card" data-aos="fade-up" data-aos-delay="300">
+          <i class="fas fa-address-book card-icon"></i>
+          <h3>Non-Contact Support</h3>
+          <p>Resolves phone numbers via <code>ImportContactsRequest</code>, sends, then cleans up.</p>
+        </div>
+        <div class="card" data-aos="fade-up" data-aos-delay="400">
+          <i class="fas fa-hourglass-half card-icon"></i>
+          <h3>FloodWait Handling</h3>
+          <p>Automatically waits and retries when Telegram rate-limits your account.</p>
+        </div>
+        <div class="card" data-aos="fade-up" data-aos-delay="500">
+          <i class="fas fa-shield-halved card-icon"></i>
+          <h3>PeerFlood Guard</h3>
+          <p>Stops the broadcast if your account is temporarily limited, then reports back.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ USAGE ============ -->
+    <section id="usage">
+      <h2 class="section-title" data-aos="fade-right">
+        <i class="fas fa-terminal"></i> Usage
+      </h2>
+      <p class="section-sub" data-aos="fade-right" data-aos-delay="100">
+        Send one command to your own Saved Messages and the bot fans it out.
+      </p>
+
+      <div class="code-block" data-aos="fade-up" data-aos-delay="200">
+        <button class="copy-btn" onclick="copyCode(this)"><i class="fas fa-copy"></i> Copy</button>
+<pre><code><span class="comment"># Broadcast to a username and a group</span>
+<span class="cmd">/send</span> <span class="arg">@friend_username</span>, <span class="arg">-1001234567890</span> <span class="str">| Hello everyone! 👋</span>
+
+<span class="comment"># Broadcast to a non-contact by phone number</span>
+<span class="cmd">/send</span> <span class="arg">+1234567890</span> <span class="str">| Hey, long time no see!</span>
+
+<span class="comment"># Mixed list — usernames, phone numbers, and group IDs</span>
+<span class="cmd">/send</span> <span class="arg">@alice</span>, <span class="arg">+15551234567</span>, <span class="arg">-1009876543210</span> <span class="str">| Big announcement coming...</span></code></pre>
+      </div>
+    </section>
+
+    <!-- ============ TECH STACK ============ -->
+    <section id="stack">
+      <h2 class="section-title" data-aos="fade-right">
+        <i class="fas fa-layer-group"></i> Tech Stack
+      </h2>
+      <p class="section-sub" data-aos="fade-right" data-aos-delay="100">
+        Built on battle-tested tools and deployed on free-tier infrastructure.
+      </p>
+
+      <div class="tech-row" data-aos="fade-up" data-aos-delay="200">
+        <div class="tech-pill"><i class="devicon-python-plain" style="color:#3776AB"></i> Python</div>
+        <div class="tech-pill"><i class="devicon-flask-original"></i> Flask</div>
+        <div class="tech-pill"><i class="fas fa-bolt" style="color:#26A5E4"></i> Telethon</div>
+        <div class="tech-pill"><i class="devicon-render-original" style="color:#46E3B7"></i> Render</div>
+        <div class="tech-pill"><i class="fas fa-heart-pulse" style="color:#3FBE7B"></i> UptimeRobot</div>
+      </div>
+    </section>
+
+    <!-- ============ ROADMAP ============ -->
+    <section id="roadmap">
+      <h2 class="section-title" data-aos="fade-right">
+        <i class="fas fa-map"></i> Roadmap
+      </h2>
+      <p class="section-sub" data-aos="fade-right" data-aos-delay="100">
+        What's coming next. PRs welcome.
+      </p>
+
+      <ul class="roadmap" data-aos="fade-up" data-aos-delay="200">
+        <li class="done"><i class="fas fa-circle-check"></i> Core broadcasting engine</li>
+        <li class="done"><i class="fas fa-circle-check"></i> FloodWait + PeerFlood handling</li>
+        <li class="done"><i class="fas fa-circle-check"></i> Non-contact resolution via phone</li>
+        <li class="todo"><i class="far fa-circle"></i> CSV upload of targets</li>
+        <li class="todo"><i class="far fa-circle"></i> Scheduled broadcasts (cron-based)</li>
+        <li class="todo"><i class="far fa-circle"></i> Media support (images, videos, files)</li>
+        <li class="todo"><i class="far fa-circle"></i> Per-target delivery log in SQLite</li>
+        <li class="todo"><i class="far fa-circle"></i> Web UI for target management</li>
+        <li class="todo"><i class="far fa-circle"></i> Retry queue for failed sends</li>
+      </ul>
+    </section>
+
+    <!-- ============ FOOTER ============ -->
+    <footer>
+      <div class="updated" data-aos="fade-up">
+        <i class="fas fa-circle"></i>
+        Last updated: <span id="last-updated">2026-10-07</span>
+      </div>
+
+      <div class="footer-links" style="margin-top:1.5rem;" data-aos="fade-up" data-aos-delay="100">
+        <a href="https://github.com/realximanta/xenon-exe-bot" target="_blank" rel="noopener">
+          <i class="fab fa-github"></i> GitHub
+        </a>
+        <a href="https://github.com/realximanta/xenon-exe-bot/blob/main/README.md" target="_blank" rel="noopener">
+          <i class="fas fa-book"></i> README
+        </a>
+        <a href="https://github.com/realximanta/xenon-exe-bot/issues" target="_blank" rel="noopener">
+          <i class="fas fa-bug"></i> Issues
+        </a>
+        <a href="https://render.com" target="_blank" rel="noopener">
+          <i class="fas fa-rocket"></i> Render
+        </a>
+      </div>
+
+      <p>Built with ❤️ and a mild fear of <code>FloodWaitError</code>.</p>
+    </footer>
+
+  </div><!-- /.content -->
+
+  <!-- ============ SCRIPTS ============ -->
+  <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+  <script>
+    // ---- AOS init ----
+    AOS.init({ once: true, mirror: false });
+
+    // ---- Particles.js ----
+    Particles.init({
+      selector: '#particles-js',
+      maxParticles: 60,
+      sizeVariations: 3,
+      speed: 0.4,
+      color: ['#26A5E4', '#1e40af', '#0ea5e9'],
+      minDistance: 120,
+      connectParticles: true,
+      responsive: [
+        { breakpoint: 768, options: { maxParticles: 30, minDistance: 80 } }
+      ]
+    });
+
+    // ---- Copy code button ----
+    function copyCode(btn) {
+      const code = btn.parentElement.querySelector('code').innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        btn.innerHTML = '<i class="fas fa-check"></i> Copied';
+        setTimeout(() => {
+          btn.innerHTML = '<i class="fas fa-copy"></i> Copy';
+        }, 2000);
+      });
+    }
+
+    // ---- Fetch live GitHub stats ----
+    (async function fetchStats() {
+      try {
+        const res = await fetch('https://api.github.com/repos/realximanta/xenon-exe-bot');
+        if (!res.ok) throw new Error('API error');
+        const data = await res.json();
+
+        document.getElementById('stat-stars').textContent = data.stargazers_count ?? '—';
+        document.getElementById('stat-forks').textContent = data.forks_count ?? '—';
+        document.getElementById('stat-issues').textContent = data.open_issues_count ?? '—';
+        document.getElementById('stat-watchers').textContent = data.subscribers_count ?? '—';
+
+        // Commit count via participation stats
+        const partRes = await fetch('https://api.github.com/repos/realximanta/xenon-exe-bot/stats/participation');
+        if (partRes.ok) {
+          const partData = await partRes.json();
+          const total = (partData.all || []).reduce((a, b) => a + b, 0);
+          document.getElementById('stat-commits').textContent = total;
+        }
+
+        // Last updated
+        const updated = new Date(data.updated_at);
+        document.getElementById('last-updated').textContent =
+          updated.toISOString().split('T')[0];
+      } catch (e) {
+        // Silent fail — values stay as "—"
+        console.warn('Could not fetch GitHub stats:', e);
+      }
+    })();
+  </script>
+
+</body>
+</html>
