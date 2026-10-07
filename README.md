@@ -237,10 +237,10 @@ Released under the **MIT License**. See [LICENSE](LICENSE) for details.
 
 ## 🙏 Acknowledgements
 
-- [Telethon](https://github.com/LonamiWebs/Telethon) — the async Telegram client that makes this possible
-- [Render](https://render.com) — free hosting with a generous free tier
-- [UptimeRobot](https://uptimerobot.com) — the keep-alive cron that never sleeps
-- [shields.io](https://shields.io) — all the pretty badges above
+- [Telethon](https://github.com/LonamiWebs/Telethon) — the async Telegram client that makes this possible.
+- [Render](https://render.com) — free hosting with a generous free tier.
+- [UptimeRobot](https://uptimerobot.com) — the keep-alive cron that never sleeps.
+- [shields.io](https://shields.io) — all the pretty badges above.
 
 ---
 
