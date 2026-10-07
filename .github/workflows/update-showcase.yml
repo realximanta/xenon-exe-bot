@@ -1,0 +1,136 @@
+name: Xenon Showcase Actions
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'index.html'
+  schedule:
+    # Every day at 03:00 UTC (08:30 IST)
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-showcase:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Fetch latest repo data & update index.html
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python - <<'PY'
+          import json, os, re, urllib.request
+          from datetime import datetime, timezone
+
+          REPO = "realximanta/xenon-exe-bot"
+          TOKEN = os.environ["GH_TOKEN"]
+
+          def api(path):
+              req = urllib.request.Request(
+                  f"https://api.github.com{path}",
+                  headers={
+                      "Authorization": f"Bearer {TOKEN}",
+                      "Accept": "application/vnd.github+json",
+                      "User-Agent": "xenon-showcase-updater",
+                  },
+              )
+              with urllib.request.urlopen(req) as r:
+                  return json.loads(r.read().decode())
+
+          # ---- Repo metadata ----
+          repo = api(f"/repos/{REPO}")
+          stars   = repo.get("stargazers_count", 0)
+          forks   = repo.get("forks_count", 0)
+          issues  = repo.get("open_issues_count", 0)
+          watchers= repo.get("subscribers_count", 0)
+          desc    = repo.get("description", "").replace("—", "-")
+          updated = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+
+          # ---- Commit participation (total commits) ----
+          try:
+              part = api(f"/repos/{REPO}/stats/participation")
+              total_commits = sum(part.get("all", []))
+          except Exception:
+              total_commits = 0
+
+          # ---- Read index.html ----
+          with open("index.html", "r", encoding="utf-8") as f:
+              html = f.read()
+
+          # ---- Replace markers ----
+          def replace_block(src, tag, content):
+              pattern = re.compile(
+                  rf"(<!--\s*{tag}_START\s*-->)(.*?)(<!--\s*{tag}_END\s*-->)",
+                  re.DOTALL,
+              )
+              return pattern.sub(rf"\g<1>\n{content}\n\g<3>", src)
+
+          html = replace_block(html, "STATS", f"""
+          <div class="stat-value" id="stat-stars">{stars}</div>
+          """)
+
+          # We replace the whole stats block for simplicity
+          stats_block = f"""<div class="stats-bar" data-aos="fade-in" data-aos-duration="800">
+      <div class="stat">
+        <div class="stat-value" id="stat-stars">{stars}</div>
+        <div class="stat-label"><i class="fas fa-star"></i> Stars</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" id="stat-forks">{forks}</div>
+        <div class="stat-label"><i class="fas fa-code-fork"></i> Forks</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" id="stat-issues">{issues}</div>
+        <div class="stat-label"><i class="fas fa-circle-exclamation"></i> Issues</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" id="stat-watchers">{watchers}</div>
+        <div class="stat-label"><i class="fas fa-eye"></i> Watchers</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" id="stat-commits">{total_commits}</div>
+        <div class="stat-label"><i class="fas fa-code-commit"></i> Commits</div>
+      </div>
+    </div>"""
+
+          html = replace_block(html, "STATS", stats_block)
+
+          # ---- Update last-updated ----
+          html = re.sub(
+              r'(<span id="last-updated">).*?(</span>)',
+              rf'\g<1>{updated}\g<2>',
+              html,
+          )
+
+          # ---- Write back ----
+          with open("index.html", "w", encoding="utf-8") as f:
+              f.write(html)
+
+          print(f"Updated: stars={stars}, forks={forks}, issues={issues}, watchers={watchers}, commits={total_commits}")
+          PY
+
+      - name: Commit & push changes
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          if git diff --staged --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "chore: auto-update showcase stats [skip ci]"
+            git push
+          fi
