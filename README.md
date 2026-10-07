@@ -1,6 +1,6 @@
 <p align="center">
  <p align="center">
-  <img src="https://telegram.org/img/t_logo.png" alt="Telegram Broadcaster" width="200" height="200"/>
+  <img src="https://raw.githubusercontent.com/uakbr/SuperTinyIcons/master/images/svg/telegram.svg" alt="Telegram" width="100"/>
 </p>
 
 
