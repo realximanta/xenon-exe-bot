@@ -250,4 +250,3 @@ Released under the **MIT License**. See [LICENSE](LICENSE) for details.
 <p align="center">
   <a href="#top">⬆️ Back to top</a>
 </p>
-```
