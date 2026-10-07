@@ -1,7 +1,8 @@
 <p align="center">
  <p align="center">
-  <img src="https://cdn.simpleicons.org/telegram/26A5E4" alt="Telegram Broadcaster" width="200" height="200"/>
+  <img src="https://telegram.org/img/t_logo.png" alt="Telegram Broadcaster" width="200" height="200"/>
 </p>
+
 
 <h1 align="center">📡 Telegram Broadcaster - xenon exe bot</h1>
 
@@ -28,7 +29,7 @@
 
 ## 🧭 Overview
 
-**Telegram Broadcaster** is a self-hosted automation tool that runs on [Render](https://render.com)'s free tier and stays alive 24/7 thanks to a `/health` endpoint pinged by [UptimeRobot](https://uptimerobot.com). It uses your **personal Telegram account** (via a Telethon session string) to send messages to:
+**Telegram Broadcaster** is a self-hosted automation tool that runs on [Render](https://render.com)'s free tier and stays alive 24/7 thanks to a `/health` endpoint pinged by [UptimeRobot](https://[...]
 
 - ✅ Personal contacts (by username or user ID)
 - ✅ Non-contacts (by phone number — imported, messaged, then removed)
@@ -37,7 +38,7 @@
 
 Send one command to your own "Saved Messages", and the bot fans it out to everyone on your list — patiently, with flood protection, no matter how long it takes.
 
-> ⚠️ **Heads up:** Telegram does **not** allow bot-token bots to DM users who haven't started a chat first. That's why this project uses your **user account** session instead. Read the [Disclaimer](#-disclaimer) before using.
+> ⚠️ **Heads up:** Telegram does **not** allow bot-token bots to DM users who haven't started a chat first. That's why this project uses your **user account** session instead. Read the [Discla[...]
 
 ---
 
