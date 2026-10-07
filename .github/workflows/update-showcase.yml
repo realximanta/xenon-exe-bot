@@ -1,4 +1,4 @@
-name: Xenon Showcase Actions
+name: Update Showcase Page
 
 on:
   push:
@@ -33,57 +33,203 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python - <<'PY'
-          import json, os, re, urllib.request
+          import json, os, re, urllib.request, urllib.parse
           from datetime import datetime, timezone
 
           REPO = "realximanta/xenon-exe-bot"
           TOKEN = os.environ["GH_TOKEN"]
 
-          def api(path):
+          # ----------------------------------------------------------------
+          # Helpers
+          # ----------------------------------------------------------------
+          def api(path, headers_extra=None):
+              headers = {
+                  "Authorization": f"Bearer {TOKEN}",
+                  "Accept": "application/vnd.github+json",
+                  "User-Agent": "xenon-showcase-updater",
+              }
+              if headers_extra:
+                  headers.update(headers_extra)
               req = urllib.request.Request(
                   f"https://api.github.com{path}",
+                  headers=headers,
+              )
+              with urllib.request.urlopen(req) as r:
+                  return json.loads(r.read().decode()), r.headers
+
+          def html_escape(text):
+              return (
+                  str(text)
+                  .replace("&", "&amp;")
+                  .replace("<", "&lt;")
+                  .replace(">", "&gt;")
+                  .replace('"', "&quot;")
+              )
+
+          def time_ago(iso_date):
+              """Convert ISO 8601 date to 'x days ago' style."""
+              try:
+                  dt = datetime.strptime(iso_date, "%Y-%m-%dT%H:%M:%SZ").replace(
+                      tzinfo=timezone.utc
+                  )
+              except Exception:
+                  return iso_date
+              delta = datetime.now(timezone.utc) - dt
+              secs = int(delta.total_seconds())
+              if secs < 60:
+                  return "just now"
+              mins = secs // 60
+              if mins < 60:
+                  return f"{mins} min ago"
+              hours = mins // 60
+              if hours < 24:
+                  return f"{hours} hr ago"
+              days = hours // 24
+              if days < 30:
+                  return f"{days}d ago"
+              months = days // 30
+              if months < 12:
+                  return f"{months}mo ago"
+              return f"{days // 365}y ago"
+
+          # ----------------------------------------------------------------
+          # 1. Repo metadata (stars, forks, issues, watchers)
+          # ----------------------------------------------------------------
+          repo, _ = api(f"/repos/{REPO}")
+          stars    = repo.get("stargazers_count", 0)
+          forks    = repo.get("forks_count", 0)
+          issues   = repo.get("open_issues_count", 0)
+          watchers = repo.get("subscribers_count", 0)
+          updated  = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+
+          # ----------------------------------------------------------------
+          # 2. Total commit count via Link header (fast, exact)
+          # ----------------------------------------------------------------
+          def total_commits(repo_full_name):
+              req = urllib.request.Request(
+                  f"https://api.github.com/repos/{repo_full_name}/commits?per_page=1",
                   headers={
                       "Authorization": f"Bearer {TOKEN}",
                       "Accept": "application/vnd.github+json",
                       "User-Agent": "xenon-showcase-updater",
                   },
               )
-              with urllib.request.urlopen(req) as r:
-                  return json.loads(r.read().decode())
+              try:
+                  with urllib.request.urlopen(req) as r:
+                      link = r.headers.get("Link", "")
+                  m = re.search(r'page=(\d+)>; rel="last"', link)
+                  return int(m.group(1)) if m else 1
+              except Exception as e:
+                  print(f"Commit count failed: {e}")
+                  return 0
 
-          # ---- Repo metadata ----
-          repo = api(f"/repos/{REPO}")
-          stars   = repo.get("stargazers_count", 0)
-          forks   = repo.get("forks_count", 0)
-          issues  = repo.get("open_issues_count", 0)
-          watchers= repo.get("subscribers_count", 0)
-          desc    = repo.get("description", "").replace("—", "-")
-          updated = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+          commit_count = total_commits(REPO)
+          print(f"Total commits: {commit_count}")
 
-          # ---- Commit participation (total commits) ----
-          try:
-              part = api(f"/repos/{REPO}/stats/participation")
-              total_commits = sum(part.get("all", []))
-          except Exception:
-              total_commits = 0
+          # ----------------------------------------------------------------
+          # 3. Fetch ALL commits (paginated, capped at 300 for safety)
+          # ----------------------------------------------------------------
+          def fetch_all_commits(repo_full_name, max_commits=300):
+              all_commits = []
+              page = 1
+              while len(all_commits) < max_commits:
+                  try:
+                      data, _ = api(
+                          f"/repos/{repo_full_name}/commits"
+                          f"?per_page=100&page={page}"
+                      )
+                  except Exception as e:
+                      print(f"Commit fetch failed on page {page}: {e}")
+                      break
+                  if not data:
+                      break
+                  all_commits.extend(data)
+                  if len(data) < 100:
+                      break
+                  page += 1
+              return all_commits[:max_commits]
 
-          # ---- Read index.html ----
+          commits = fetch_all_commits(REPO)
+          print(f"Fetched {len(commits)} commits for feed")
+
+          # ----------------------------------------------------------------
+          # 4. Build commit feed HTML
+          # ----------------------------------------------------------------
+          def build_commit_feed(commits):
+              if not commits:
+                  return (
+                      '<p style="color:#8892a4;text-align:center;padding:2rem;">'
+                      "No commits yet.</p>"
+                  )
+
+              items = []
+              for c in commits:
+                  sha = c["sha"]
+                  short_sha = sha[:7]
+                  msg = c["commit"]["message"].split("\n")[0]
+                  msg = html_escape(msg)
+                  author = html_escape(c["commit"]["author"]["name"])
+                  date_iso = c["commit"]["author"]["date"]
+                  ago = time_ago(date_iso)
+                  url = c["html_url"]
+
+                  # Pick an icon based on commit message prefix
+                  lower = msg.lower()
+                  if lower.startswith("feat"):
+                      icon = '<i class="fas fa-star" style="color:#eab308"></i>'
+                  elif lower.startswith("fix"):
+                      icon = '<i class="fas fa-bug" style="color:#ef4444"></i>'
+                  elif lower.startswith("docs"):
+                      icon = '<i class="fas fa-book" style="color:#26A5E4"></i>'
+                  elif lower.startswith("chore"):
+                      icon = '<i class="fas fa-screwdriver-wrench" style="color:#8892a4"></i>'
+                  elif lower.startswith("refactor"):
+                      icon = '<i class="fas fa-code" style="color:#a855f7"></i>'
+                  elif lower.startswith("test"):
+                      icon = '<i class="fas fa-vial" style="color:#22c55e"></i>'
+                  elif lower.startswith("style"):
+                      icon = '<i class="fas fa-paintbrush" style="color:#ec4899"></i>'
+                  elif lower.startswith("perf"):
+                      icon = '<i class="fas fa-gauge-high" style="color:#f97316"></i>'
+                  elif lower.startswith("ci"):
+                      icon = '<i class="fas fa-gears" style="color:#38bdf8"></i>'
+                  elif lower.startswith("build"):
+                      icon = '<i class="fas fa-cubes" style="color:#14b8a6"></i>'
+                  elif lower.startswith("revert"):
+                      icon = '<i class="fas fa-rotate-left" style="color:#f43f5e"></i>'
+                  else:
+                      icon = '<i class="fas fa-code-commit" style="color:#26A5E4"></i>'
+
+                  items.append(
+                      f'<a class="commit-item" href="{url}" target="_blank" rel="noopener">'
+                      f'<div class="commit-icon">{icon}</div>'
+                      f'<div class="commit-body">'
+                      f'<div class="commit-msg">{msg}</div>'
+                      f'<div class="commit-meta">'
+                      f'<span class="commit-sha">{short_sha}</span>'
+                      f'<span class="commit-sep">·</span>'
+                      f'<span class="commit-author">{author}</span>'
+                      f'<span class="commit-sep">·</span>'
+                      f'<span class="commit-time">{ago}</span>'
+                      f'</div>'
+                      f'</div>'
+                      f'<div class="commit-arrow"><i class="fas fa-arrow-right"></i></div>'
+                      f'</a>'
+                  )
+
+              return "\n".join(items)
+
+          commit_feed_html = build_commit_feed(commits)
+
+          # ----------------------------------------------------------------
+          # 5. Read index.html
+          # ----------------------------------------------------------------
           with open("index.html", "r", encoding="utf-8") as f:
               html = f.read()
 
-          # ---- Replace markers ----
-          def replace_block(src, tag, content):
-              pattern = re.compile(
-                  rf"(<!--\s*{tag}_START\s*-->)(.*?)(<!--\s*{tag}_END\s*-->)",
-                  re.DOTALL,
-              )
-              return pattern.sub(rf"\g<1>\n{content}\n\g<3>", src)
-
-          html = replace_block(html, "STATS", f"""
-          <div class="stat-value" id="stat-stars">{stars}</div>
-          """)
-
-          # We replace the whole stats block for simplicity
+          # ----------------------------------------------------------------
+          # 6. Replace STATS block
+          # ----------------------------------------------------------------
           stats_block = f"""<div class="stats-bar" data-aos="fade-in" data-aos-duration="800">
       <div class="stat">
         <div class="stat-value" id="stat-stars">{stars}</div>
@@ -102,25 +248,49 @@ jobs:
         <div class="stat-label"><i class="fas fa-eye"></i> Watchers</div>
       </div>
       <div class="stat">
-        <div class="stat-value" id="stat-commits">{total_commits}</div>
+        <div class="stat-value" id="stat-commits">{commit_count}</div>
         <div class="stat-label"><i class="fas fa-code-commit"></i> Commits</div>
       </div>
     </div>"""
 
-          html = replace_block(html, "STATS", stats_block)
-
-          # ---- Update last-updated ----
           html = re.sub(
-              r'(<span id="last-updated">).*?(</span>)',
-              rf'\g<1>{updated}\g<2>',
+              r"(<!--\s*STATS_START\s*-->)(.*?)(<!--\s*STATS_END\s*-->)",
+              rf"\g<1>\n{stats_block}\n\g<3>",
               html,
+              flags=re.DOTALL,
           )
 
-          # ---- Write back ----
+          # ----------------------------------------------------------------
+          # 7. Replace COMMITS_FEED block
+          # ----------------------------------------------------------------
+          html = re.sub(
+              r"(<!--\s*COMMITS_FEED_START\s*-->)(.*?)(<!--\s*COMMITS_FEED_END\s*-->)",
+              rf"\g<1>\n{commit_feed_html}\n\g<3>",
+              html,
+              flags=re.DOTALL,
+          )
+
+          # ----------------------------------------------------------------
+          # 8. Update last-updated timestamp
+          # ----------------------------------------------------------------
+          html = re.sub(
+              r'(<span id="last-updated">).*?(</span>)',
+              rf"\g<1>{updated}\g<2>",
+              html,
+              flags=re.DOTALL,
+          )
+
+          # ----------------------------------------------------------------
+          # 9. Write back
+          # ----------------------------------------------------------------
           with open("index.html", "w", encoding="utf-8") as f:
               f.write(html)
 
-          print(f"Updated: stars={stars}, forks={forks}, issues={issues}, watchers={watchers}, commits={total_commits}")
+          print(
+              f"Updated: stars={stars}, forks={forks}, issues={issues}, "
+              f"watchers={watchers}, commits={commit_count}, "
+              f"feed_items={len(commits)}"
+          )
           PY
 
       - name: Commit & push changes
@@ -131,6 +301,6 @@ jobs:
           if git diff --staged --quiet; then
             echo "No changes to commit."
           else
-            git commit -m "chore: auto-update showcase stats [skip ci]"
+            git commit -m "chore: auto-update showcase stats + commit feed [skip ci]"
             git push
           fi
