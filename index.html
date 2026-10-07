@@ -374,6 +374,125 @@
     .roadmap li.done i { color: var(--green); }
     .roadmap li.todo i { color: var(--text-muted); }
 
+    /* ---- Commit Feed ---- */
+    .commit-feed {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      max-height: 620px;
+      overflow-y: auto;
+      padding: 0.5rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--accent) var(--surface-2);
+    }
+
+    .commit-feed::-webkit-scrollbar { width: 8px; }
+    .commit-feed::-webkit-scrollbar-track { background: var(--surface-2); border-radius: 8px; }
+    .commit-feed::-webkit-scrollbar-thumb {
+      background: var(--accent);
+      border-radius: 8px;
+      opacity: 0.6;
+    }
+    .commit-feed::-webkit-scrollbar-thumb:hover { opacity: 1; }
+
+    .commit-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.85rem 1rem;
+      background: var(--surface-2);
+      border: 1px solid transparent;
+      border-radius: 10px;
+      text-decoration: none;
+      color: var(--text);
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .commit-item:hover {
+      border-color: rgba(38, 165, 228, 0.5);
+      background: rgba(38, 165, 228, 0.06);
+      transform: translateX(4px);
+    }
+
+    .commit-icon {
+      flex-shrink: 0;
+      width: 38px;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      font-size: 0.95rem;
+    }
+
+    .commit-body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .commit-msg {
+      font-size: 0.92rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 0.2rem;
+    }
+
+    .commit-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+      flex-wrap: wrap;
+    }
+
+    .commit-sha {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 0.1rem 0.45rem;
+      border-radius: 5px;
+      font-size: 0.7rem;
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .commit-sep { color: var(--border); }
+
+    .commit-author {
+      color: var(--text-muted);
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+    }
+
+    .commit-time {
+      color: var(--text-muted);
+      font-family: 'Inter', sans-serif;
+    }
+
+    .commit-arrow {
+      flex-shrink: 0;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      opacity: 0;
+      transform: translateX(-4px);
+      transition: all 0.2s ease;
+    }
+
+    .commit-item:hover .commit-arrow {
+      opacity: 1;
+      transform: translateX(0);
+      color: var(--accent);
+    }
+
     /* ---- Footer ---- */
     footer {
       text-align: center;
@@ -424,6 +543,18 @@
       .stats-bar { gap: 1.2rem; }
       .stat-value { font-size: 1.4rem; }
       section { padding: 3rem 1rem; }
+
+      .commit-item {
+        padding: 0.7rem 0.8rem;
+        gap: 0.7rem;
+      }
+      .commit-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 0.85rem;
+      }
+      .commit-msg { font-size: 0.85rem; }
+      .commit-meta { font-size: 0.7rem; }
     }
   </style>
 </head>
@@ -466,6 +597,7 @@
     </header>
 
     <!-- ============ LIVE STATS ============ -->
+    <!-- STATS_START -->
     <div class="stats-bar" data-aos="fade-in" data-aos-duration="800">
       <div class="stat">
         <div class="stat-value" id="stat-stars">—</div>
@@ -488,6 +620,7 @@
         <div class="stat-label"><i class="fas fa-code-commit"></i> Commits</div>
       </div>
     </div>
+    <!-- STATS_END -->
 
     <!-- ============ FEATURES ============ -->
     <section id="features">
@@ -567,7 +700,7 @@
         <div class="tech-pill"><i class="devicon-python-plain" style="color:#3776AB"></i> Python</div>
         <div class="tech-pill"><i class="devicon-flask-original"></i> Flask</div>
         <div class="tech-pill"><i class="fas fa-bolt" style="color:#26A5E4"></i> Telethon</div>
-        <div class="tech-pill"><i class="devicon-render-original" style="color:#46E3B7"></i> Render</div>
+        <div class="tech-pill"><i class="fas fa-cloud" style="color:#46E3B7"></i> Render</div>
         <div class="tech-pill"><i class="fas fa-heart-pulse" style="color:#3FBE7B"></i> UptimeRobot</div>
       </div>
     </section>
@@ -594,11 +727,27 @@
       </ul>
     </section>
 
+    <!-- ============ COMMITS FEED ============ -->
+    <section id="commits">
+      <h2 class="section-title" data-aos="fade-right">
+        <i class="fas fa-code-commit"></i> Recent Commits
+      </h2>
+      <p class="section-sub" data-aos="fade-right" data-aos-delay="100">
+        Every change to this repo, pulled live from GitHub.
+      </p>
+
+      <div class="commit-feed" data-aos="fade-up" data-aos-delay="200">
+        <!-- COMMITS_FEED_START -->
+        <p style="color:#8892a4;text-align:center;padding:2rem;">Loading commits…</p>
+        <!-- COMMITS_FEED_END -->
+      </div>
+    </section>
+
     <!-- ============ FOOTER ============ -->
     <footer>
       <div class="updated" data-aos="fade-up">
         <i class="fas fa-circle"></i>
-        Last updated: <span id="last-updated">2026-10-07</span>
+        Last updated: <span id="last-updated">—</span>
       </div>
 
       <div class="footer-links" style="margin-top:1.5rem;" data-aos="fade-up" data-aos-delay="100">
@@ -652,32 +801,39 @@
       });
     }
 
-    // ---- Fetch live GitHub stats ----
+    // ---- Fetch live GitHub stats (client-side fallback, overwritten by workflow) ----
     (async function fetchStats() {
       try {
         const res = await fetch('https://api.github.com/repos/realximanta/xenon-exe-bot');
         if (!res.ok) throw new Error('API error');
         const data = await res.json();
 
-        document.getElementById('stat-stars').textContent = data.stargazers_count ?? '—';
-        document.getElementById('stat-forks').textContent = data.forks_count ?? '—';
-        document.getElementById('stat-issues').textContent = data.open_issues_count ?? '—';
-        document.getElementById('stat-watchers').textContent = data.subscribers_count ?? '—';
+        const setIfDash = (id, val) => {
+          const el = document.getElementById(id);
+          if (el && (el.textContent === '—' || el.textContent.trim() === '')) {
+            el.textContent = val ?? '—';
+          }
+        };
 
-        // Commit count via participation stats
-        const partRes = await fetch('https://api.github.com/repos/realximanta/xenon-exe-bot/stats/participation');
-        if (partRes.ok) {
-          const partData = await partRes.json();
-          const total = (partData.all || []).reduce((a, b) => a + b, 0);
-          document.getElementById('stat-commits').textContent = total;
+        setIfDash('stat-stars', data.stargazers_count);
+        setIfDash('stat-forks', data.forks_count);
+        setIfDash('stat-issues', data.open_issues_count);
+        setIfDash('stat-watchers', data.subscribers_count);
+
+        // Live commit count via Link header
+        const commitRes = await fetch(
+          'https://api.github.com/repos/realximanta/xenon-exe-bot/commits?per_page=1'
+        );
+        const link = commitRes.headers.get('Link') || '';
+        const m = link.match(/page=(\d+)>; rel="last"/);
+        if (m) setIfDash('stat-commits', m[1]);
+
+        // Last updated fallback
+        const updatedEl = document.getElementById('last-updated');
+        if (updatedEl && updatedEl.textContent === '—') {
+          updatedEl.textContent = new Date(data.updated_at).toISOString().split('T')[0];
         }
-
-        // Last updated
-        const updated = new Date(data.updated_at);
-        document.getElementById('last-updated').textContent =
-          updated.toISOString().split('T')[0];
       } catch (e) {
-        // Silent fail — values stay as "—"
         console.warn('Could not fetch GitHub stats:', e);
       }
     })();
