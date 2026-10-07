@@ -3,7 +3,7 @@
   <img src="https://cdn.simpleicons.org/telegram/26A5E4" alt="Telegram Broadcaster" width="200" height="200"/>
 </p>
 
-<h1 align="center">📡 Telegram Broadcaster</h1>
+<h1 align="center">📡 Telegram Broadcaster - xenon exe bot</h1>
 
 <p align="center">
   <em>A 24/7 Telegram automation bot that broadcasts your messages to contacts, non-contacts, and groups — deployed on Render, kept alive by UptimeRobot.</em>
